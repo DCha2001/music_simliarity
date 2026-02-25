@@ -27,3 +27,25 @@ init_db()
 async def hello():
     return {"message": "Hello from FastAPI!"}
 
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for monitoring"""
+    try:
+        # Test database connection
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+        return {
+            "status": "healthy",
+            "database": "connected",
+            "service": "music-similarity-api"
+        }
+    except Exception as e:
+        return {
+            "status": "unhealthy",
+            "database": "disconnected",
+            "error": str(e)
+        }
+
+from sqlalchemy import text
+from app.db.db import engine
+

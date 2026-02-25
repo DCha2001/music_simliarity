@@ -13,30 +13,63 @@ class SongSearchRequest(BaseModel):
 
 @router.post("/search")
 def search_songs(request: SongSearchRequest, db: Session = Depends(get_db)):
+    """
+    Search for similar songs based on artist and title.
+    Returns top 5 most similar songs using vector similarity.
+    """
     try:
-        artist = request.artist
-        title = request.title
+        artist = request.artist.strip()
+        title = request.title.strip()
 
-        song = db.query(Song).filter(Song.title == title, Song.artist == artist).all()
-        print(song)
+        # Validate input
+        if not artist or not title:
+            raise HTTPException(status_code=400, detail="Artist and title are required")
 
-        if song is None or len(song) == 0:
-            raise HTTPException(status_code=404, detail="Song not found")
-        
+        # Find the query song
+        song = db.query(Song).filter(
+            Song.title == title,
+            Song.artist == artist
+        ).first()
 
+        if song is None:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Song '{title}' by '{artist}' not found in database"
+            )
+
+        # Check if embedding exists
+        if song.embedding is None:
+            raise HTTPException(
+                status_code=500,
+                detail="Song found but embedding is missing"
+            )
+
+        # Find similar songs using vector similarity
         top_songs = (
-                            db.query(Song)
-                            .order_by(Song.embedding.l2_distance(song[0].embedding))
-                            .limit(6)
-                            .all()
-                        )
-        
+            db.query(Song)
+            .order_by(Song.embedding.l2_distance(song.embedding))
+            .limit(6)  # Get 6 (first will be the query song itself)
+            .all()
+        )
 
-        songs = [
+        # Exclude the query song from results
+        similar_songs = [
             {"id": r.id, "title": r.title, "artist": r.artist}
             for r in top_songs[1:]
         ]
 
-        return {"status": "success", "songs": songs}
+        return {
+            "status": "success",
+            "query": {"title": title, "artist": artist},
+            "songs": similar_songs
+        }
+
+    except HTTPException:
+        raise
     except Exception as e:
-        return {"status": "error", "message": str(e.detail) if isinstance(e, HTTPException) else str(e) }
+        # Log the error (in production, use proper logging)
+        print(f"Error in search endpoint: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail="An error occurred while searching for similar songs"
+        )
