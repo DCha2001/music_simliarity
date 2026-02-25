@@ -55,7 +55,7 @@ This project enables semantic music search by converting audio files into high-d
 
 1. Clone the repository
 ```bash
-git clone https://github.com/DCha2001/music_simliarity.git
+git clone https://github.com/DCha2001/music_similarity.git
 cd MusicSimilarity
 ```
 
@@ -89,7 +89,7 @@ MusicSimilarity/
 │   │   │   └── search.py          # Search endpoints
 │   │   ├── services/
 │   │   │   ├── embeddings.py      # OpenL3 embedding generation
-│   │   │   └── find_simliar_songs.py
+│   │   │   └── find_similar_songs.py
 │   │   ├── utils/
 │   │   │   ├── dependencies.py
 │   │   │   └── getFM.py           # FMA dataset utilities
